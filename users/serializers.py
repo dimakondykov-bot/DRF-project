@@ -1,12 +1,21 @@
 from rest_framework.serializers import ModelSerializer
-
+from rest_framework import serializers
+from users.models import Payments
 from users.models import User
 
 
+class PaymentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payments
+        fields = '__all__'
+
+
 class UserSerializer(ModelSerializer):
+    payments = PaymentsSerializer(many=True, read_only=True)
+
     class Meta:
         model = User
-        fields = ("id", "email", "password", "phone", "city", "avatar")
+        fields = ("id", "email", "password", "phone", "city", "avatar", "payments")
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
@@ -19,3 +28,6 @@ class UserSerializer(ModelSerializer):
             instance.set_password(password)
 
         return super().update(instance, validated_data)
+
+
+
