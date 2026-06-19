@@ -1,10 +1,20 @@
 from django.conf import settings
 from rest_framework import generics
 from django.db import models
+from django.conf import settings
 
 
 
 class Course(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Владелец",
+        blank=True,
+        null=True,
+        related_name="Course",
+    )
+
     name = models.CharField(
         max_length=100,
         verbose_name="Название курса",
@@ -36,6 +46,15 @@ class Course(models.Model):
 
 
 class Lesson(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Владелец",
+        blank=True,
+        null=True,
+        related_name="Lessons",
+    )
+
     course = models.ForeignKey(
         Course,
         on_delete=models.CASCADE,
