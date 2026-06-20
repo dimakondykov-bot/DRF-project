@@ -4,8 +4,6 @@ from users.views import UsersViewSet, PaymentsListApiView, UserCreateApiView
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-
-
 app_name = UsersConfig.name
 
 router = SimpleRouter()
@@ -19,4 +17,3 @@ urlpatterns = [
 ]
 
 urlpatterns += router.urls
-

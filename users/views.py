@@ -15,7 +15,7 @@ class UsersViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
-        if self.action in ["retrieve","update","partial_update"]:
+        if self.action in ["retrieve", "update", "partial_update"]:
             user_id_from_url = self.kwargs.get("pk")
 
             if str(user_id_from_url) == str(self.request.user.id):
@@ -30,6 +30,7 @@ class PaymentsListApiView(generics.ListAPIView):
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filterset_fields = ("paid_course", "paid_lesson", "payment_method")
     ordering_fields = ("payments_date",)
+
 
 class UserCreateApiView(generics.CreateAPIView):
     queryset = User.objects.all()

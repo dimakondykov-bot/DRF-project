@@ -47,12 +47,11 @@ class Payments(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name="payments",
-        verbose_name="пользователь"
+        verbose_name="пользователь",
     )
 
     payments_date = models.DateField(
-        verbose_name="Дата оплаты",
-        help_text="Укажите дату проведения платежа"
+        verbose_name="Дата оплаты", help_text="Укажите дату проведения платежа"
     )
 
     paid_course = models.ForeignKey(
@@ -60,7 +59,7 @@ class Payments(models.Model):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        verbose_name="Курс оплачен"
+        verbose_name="Курс оплачен",
     )
 
     paid_lesson = models.ForeignKey(
@@ -72,16 +71,10 @@ class Payments(models.Model):
     )
 
     payment_amount = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        verbose_name="Суммы оплаты"
+        max_digits=10, decimal_places=2, verbose_name="Суммы оплаты"
     )
 
-    PAYMENT_METHODS = [
-        ("cash", "Наличные"),
-        ("transfer_to_account","Перевод на счёт")
-    ]
-
+    PAYMENT_METHODS = [("cash", "Наличные"), ("transfer_to_account", "Перевод на счёт")]
 
     payment_method = models.CharField(
         max_length=50,
