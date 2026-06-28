@@ -97,3 +97,25 @@ class Lesson(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Subscription(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name='Подписчик',
+        related_name="user_subscriptions",
+    )
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="course_subscriptions",
+        verbose_name="Курс подписки",
+    )
+
+    class Meta:
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
+
+    def __str__(self):
+        return self.course.name

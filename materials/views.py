@@ -1,5 +1,8 @@
 from rest_framework import viewsets, generics
-from materials.models import Course, Lesson
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
+from materials.models import Course, Lesson, Subscription
 from materials.serializers import (
     LessonSerializer,
     CourseSerializer,
@@ -7,7 +10,7 @@ from materials.serializers import (
 )
 from users.permissions import IsModerator, IsOwner
 from rest_framework.permissions import IsAuthenticated
-
+from materials.paginations import CastomPagination
 
 class CourseViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
@@ -35,6 +38,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+    pagination_class = CastomPagination
 
 class LessonCreateAPIView(generics.CreateAPIView):
     def get_queryset(self):
@@ -44,10 +48,11 @@ class LessonCreateAPIView(generics.CreateAPIView):
 
     serializer_class = LessonSerializer
 
-    def get_permission(self):
+    def get_permissions(self):
         if self.request.user.groups.filter(name="Moderators").exists():
             return [IsOwner()]
         return [IsAuthenticated()]
+
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
@@ -62,7 +67,7 @@ class LessonListAPIView(generics.ListAPIView):
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated]
 
-
+    pagination_class = CastomPagination
 class LessonRetrieveAPIView(generics.RetrieveAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
@@ -79,3 +84,24 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, IsOwner]
+
+
+class SubscriptionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+
+        course_id = request.data.get("course")
+        course_item = get_object_or_404(Course, id=course_id)
+
+        subscription_item = Subscription.objects.filter(course=course_item, user=user)
+
+        if subscription_item.exists():
+            subscription_item.delete()
+            message = "Подписка удалена"
+        else:
+            Subscription.objects.create(course=course_item, user=user)
+            message = "Подписка добавлена"
+
+        return Response({"message": message})
