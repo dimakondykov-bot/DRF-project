@@ -1,0 +1,26 @@
+[
+  {
+    "model": "users.payments",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "payments_date": "2026-06-14",
+      "paid_course": 1,
+      "paid_lesson": null,
+      "payment_amount": "15000.00",
+      "payment_method": "cash"
+    }
+  },
+  {
+    "model": "users.payments",
+    "pk": 2,
+    "fields": {
+      "user": 1,
+      "payments_date": "2026-06-14",
+      "paid_course": null,
+      "paid_lesson": 1,
+      "payment_amount": "1500.00",
+      "payment_method": "transfer_to_account"
+    }
+  }
+]
