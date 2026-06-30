@@ -47,7 +47,7 @@ class PaymentsCreateApiView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        payment = serializer.save(user=self.request.user)
+        payment: Payments = serializer.save(user=self.request.user)
 
         if payment.paid_course:
             product_name = payment.paid_course.title
