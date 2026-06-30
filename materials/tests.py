@@ -16,27 +16,26 @@ class LessonTestCase(APITestCase):
 
         User = get_user_model()
 
-        self.user = User.objects.create(
-            email="student_test@test.ru"
-        )
+        self.user = User.objects.create(email="student_test@test.ru")
         self.user.set_password("testpassword12345")
         self.user.save()
         self.course = Course.objects.create(
-            name="Тестовый курс",
-            description="Описание",
-            owner=self.user
+            name="Тестовый курс", description="Описание", owner=self.user
         )
+
     def test_lesson_create(self):
 
         self.client.force_authenticate(user=self.user)
 
         data = {
-            "name":"Тест1",
+            "name": "Тест1",
             "course": self.course.id,
             "cource_url": "https://youtube.com",
         }
 
-        response = self.client.post('/materials/lessons/create/', data=data, format='json')
+        response = self.client.post(
+            "/materials/lessons/create/", data=data, format="json"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Lesson.objects.count(), 1)

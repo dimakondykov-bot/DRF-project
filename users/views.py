@@ -1,14 +1,17 @@
+from itertools import product
+
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter
 from rest_framework import generics
 from rest_framework.filters import OrderingFilter
-from rest_framework.generics import ListAPIView
 from rest_framework.viewsets import ModelViewSet
 from users.models import User, Payments
 from users.serializers import UserSerializer, PaymentsSerializer, UserShortSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
+import stripe
 
 
+
+stripe.api_key = "sk_test_твоя_строка_ключа"
 class UsersViewSet(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -36,3 +39,38 @@ class UserCreateApiView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
+
+
+class PaymentsCreateApiView(generics.CreateAPIView):
+    queryset = Payments.objects.all()
+    serializer_class = PaymentsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        payment = serializer.save(user=self.request.user)
+
+        if payment.paid_course:
+            product_name = payment.paid_course.title
+            product_description = getattr(payment.paid_course, 'description', '')
+        elif payment.paid_lesson:
+            product_name = payment.paid_lesson.title
+            product_description = getattr(payment.paid_lesson, 'description', '')
+        else:
+            product_name = "Оплата обучения"
+            product_description = ""
+
+        product = stripe.Product.create(name=product_name, description=product_description)
+        price = stripe.Price.create(
+            product=product.id,
+            unit_amount=int(payment.payment_amount*100),
+            currency="rub",
+        )
+        session = stripe.checkout.Session.create(
+            success_url="https://stripe.com/secure",
+            line_items=[{"price": price.id, "quantity": 1,}], # Покупка одного курса
+            mode="payment",
+        )
+
+        payment.session_id = session.id #Сохраняем ссылку на оплату и ID сессии в наш платеж
+        payment.link = session.url
+        payment.save()
