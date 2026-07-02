@@ -1,5 +1,3 @@
-from itertools import product
-
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics
 from rest_framework.filters import OrderingFilter
@@ -7,11 +5,9 @@ from rest_framework.viewsets import ModelViewSet
 from users.models import User, Payments
 from users.serializers import UserSerializer, PaymentsSerializer, UserShortSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
-import stripe
+from users.services import create_stripe_price, create_stripe_session, create_stripe_session, create_stripe_product
 
 
-
-stripe.api_key = "sk_test_твоя_строка_ключа"
 class UsersViewSet(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -24,6 +20,7 @@ class UsersViewSet(ModelViewSet):
             if str(user_id_from_url) == str(self.request.user.id):
                 return UserSerializer
         return UserShortSerializer
+
 
 
 class PaymentsListApiView(generics.ListAPIView):
@@ -39,6 +36,7 @@ class UserCreateApiView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
+
 
 
 class PaymentsCreateApiView(generics.CreateAPIView):
@@ -59,18 +57,11 @@ class PaymentsCreateApiView(generics.CreateAPIView):
             product_name = "Оплата обучения"
             product_description = ""
 
-        product = stripe.Product.create(name=product_name, description=product_description)
-        price = stripe.Price.create(
-            product=product.id,
-            unit_amount=int(payment.payment_amount*100),
-            currency="rub",
-        )
-        session = stripe.checkout.Session.create(
-            success_url="https://stripe.com/secure",
-            line_items=[{"price": price.id, "quantity": 1,}], # Покупка одного курса
-            mode="payment",
-        )
+        stripe_product = create_stripe_product(product_name, product_description)
+        stripe_price = create_stripe_price(stripe_product.id,payment.payment_amount)
+        stripe_session = create_stripe_session(stripe_price.id)
 
-        payment.session_id = session.id #Сохраняем ссылку на оплату и ID сессии в наш платеж
-        payment.link = session.url
+        payment.session_id = stripe_session.id
+        payment.link = stripe_session.url
+
         payment.save()
