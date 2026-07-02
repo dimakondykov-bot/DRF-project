@@ -103,7 +103,7 @@ class Subscription(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        verbose_name='Подписчик',
+        verbose_name="Подписчик",
         related_name="user_subscriptions",
     )
     course = models.ForeignKey(
