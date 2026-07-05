@@ -11,7 +11,7 @@ from materials.serializers import (
 from users.permissions import IsModerator, IsOwner
 from rest_framework.permissions import IsAuthenticated
 from materials.paginations import CastomPagination
-
+from materials.tasks import send_course_update_email
 
 class CourseViewSet(viewsets.ModelViewSet):
     """
@@ -43,6 +43,10 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
+        course = serializer.save()
+        send_course_update_email.delay(course.id)
 
     pagination_class = CastomPagination
 

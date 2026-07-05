@@ -65,3 +65,4 @@ class PaymentsCreateApiView(generics.CreateAPIView):
         payment.link = stripe_session.url
 
         payment.save()
+
