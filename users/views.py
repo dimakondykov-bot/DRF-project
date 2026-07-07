@@ -6,7 +6,7 @@ from users.models import User, Payments
 from users.serializers import UserSerializer, PaymentsSerializer, UserShortSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from users.services import create_stripe_price, create_stripe_session, create_stripe_session, create_stripe_product
-
+from django.db import transaction
 
 class UsersViewSet(ModelViewSet):
     queryset = User.objects.all()

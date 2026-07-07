@@ -1,6 +1,7 @@
 from celery import shared_task
 from django.core.mail import send_mail
 from materials.models import Course, Subscription
+from django.conf import settings
 
 
 
@@ -12,7 +13,7 @@ def send_course_update_email(course_id):
         email_list.append(sub.user.email)
     if email_list:
         send_mail(
-            subject="Курс", message=f"Курс \"{course.title}\" был обновлён!", recipient_list=email_list,
+            subject="Курс", message=f"Курс \"{course.name}\" был обновлён!",from_email=settings.EMAIL_HOST_USER, recipient_list=email_list,
         )
 
 

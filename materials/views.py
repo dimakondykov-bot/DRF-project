@@ -12,6 +12,7 @@ from users.permissions import IsModerator, IsOwner
 from rest_framework.permissions import IsAuthenticated
 from materials.paginations import CastomPagination
 from materials.tasks import send_course_update_email
+from django.db import transaction
 
 class CourseViewSet(viewsets.ModelViewSet):
     """
@@ -46,7 +47,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         course = serializer.save()
-        send_course_update_email.delay(course.id)
+        transaction.on_commit(lambda:send_course_update_email.delay(course.id))
 
     pagination_class = CastomPagination
 
