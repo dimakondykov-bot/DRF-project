@@ -2,8 +2,8 @@ import os.path
 from datetime import timedelta
 from celery.schedules import crontab
 from dotenv import load_dotenv
-
 from pathlib import Path
+
 
 load_dotenv()
 
@@ -166,4 +166,6 @@ CELERY_BEAT_SCHEDULE = {
 
 
 CELERY_TASK_ALWAYS_EAGER = False
+
+
 
