@@ -1,5 +1,4 @@
 from django.contrib.auth.models import AbstractUser
-from materials.models import Course, Lesson
 from django.db import models
 
 
@@ -51,11 +50,14 @@ class Payments(models.Model):
     )
 
     payments_date = models.DateField(
-        verbose_name="Дата оплаты", help_text="Укажите дату проведения платежа"
+        verbose_name="Дата оплаты",
+        help_text="Укажите дату проведения платежа",
+        blank=True,
+        null=True,
     )
 
     paid_course = models.ForeignKey(
-        Course,
+        "materials.Course",
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
@@ -63,7 +65,7 @@ class Payments(models.Model):
     )
 
     paid_lesson = models.ForeignKey(
-        Lesson,
+        "materials.Lesson",
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
@@ -71,7 +73,11 @@ class Payments(models.Model):
     )
 
     payment_amount = models.DecimalField(
-        max_digits=10, decimal_places=2, verbose_name="Суммы оплаты"
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Суммы оплаты",
+        blank=True,
+        null=True,
     )
 
     PAYMENT_METHODS = [("cash", "Наличные"), ("transfer_to_account", "Перевод на счёт")]
@@ -82,3 +88,16 @@ class Payments(models.Model):
         default="cash",
         verbose_name="Способ оплаты",
     )
+    session_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="id  сессии"
+    )
+    link = models.URLField(
+        max_length=400,
+        blank=True,
+        null=True,
+        verbose_name="Ссылка на оплату"
+    )
+
