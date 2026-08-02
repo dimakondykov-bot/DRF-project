@@ -80,8 +80,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Log in in Docker hub
-        run: echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+      # ИСПРАВЛЕНО: используем официальный экшен вместо echo | docker login
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: build docker image
         run: docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }} .
@@ -110,12 +114,12 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF' 
           set -e 
           
-          # Теперь обращаемся к переменным через синтаксис Linux ($ИМЯ)
           cd $DEPLOY_DIR
           
           git pull origin $BRANCH_NAME
           
-          echo $DOCKER_HUB_ACCESS_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin
+          # ИСПРАВЛЕНО: безопасная авторизация без интерактивного TTY на вашем сервере
+          docker login -u "$DOCKER_HUB_USERNAME" -p "$DOCKER_HUB_ACCESS_TOKEN"
           
           docker pull $DOCKER_HUB_USERNAME/myapp:$TAG 
           
@@ -125,7 +129,6 @@ jobs:
           docker-compose down
           docker-compose up -d --build
           
-          # Ждем пару секунд, чтобы контейнер успел инициализироваться перед миграцией
           sleep 3
           docker-compose exec -T web python manage.py migrate
           
