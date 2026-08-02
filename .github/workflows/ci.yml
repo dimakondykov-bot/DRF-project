@@ -111,7 +111,7 @@ jobs:
           
           sudo chown -R \$(whoami):\$(whoami) "${{ secrets.DEPLOY_DIR }}"
           
-          git config --global --add safe.directory "${{ secrets.DEPLOY_DIR }}"
+          git config --global --add safe.directory '*'
           
           git pull origin "${{ github.ref_name }}"
           
