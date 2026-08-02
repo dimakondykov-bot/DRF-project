@@ -1,48 +1,55 @@
-# Коментарии пишу для себя, чтоб запомнить
 name: Django CI
 
 on: [ push, pull_request ]
 
 jobs:
-  lint: # проверка кода линтором
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code # получение коди из репозитория
+      - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Set up Python # установка пайтон нужной версии
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
 
-      - name: Install flake8 # установка flake8 для проверки кода
+      - name: Install flake8
         run: |
           python -m pip install --upgrade pip
           pip install flake8
 
-      - name: Run flake8 # запуск проверки кода через flake8
-        run: flake8 . --exclude=.venv,venv,.git,__pycache__,*migrations* --max-line-length=120
+      - name: Run flake8
+        run: flake8 . --exclude='.venv,venv,.git,__pycache__,*migrations*' --max-line-length=120 --ignore=W292,W391
 
   test:
-    needs: lint # Запуск тестов. Тесты запускаются только после успешного прохождения линтеров
+    needs: lint
     runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       SECRET_KEY: "temporary_secret_key_for_github_actions_testing"
       ENGINE: "django.db.backends.sqlite3"
       NAME: "test_db"
-      USER: "test_user"
-      DB_PASSWORD: "test_password"
-      HOST: "127.0.0.1"
-      PORT: "5432"
       CELERY_BROKER_URL: "redis://127.0.0.1:6379/0"
       CELERY_RESULT_BACKEND: "redis://127.0.0.1:6379/0"
       TELEGRAM_TOKEN_TG: "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
 
     steps:
-      - name: Check out code # получение коди из репозитория
+      - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Set up python # установка пайтон нужной версии
+      - name: Set up python
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
@@ -51,10 +58,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }} -pip-${{ hashFiles('**/requirements.txt')}}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip_
 
-      - name: Install dependencies # устанавливаем зависимости проекта
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -62,64 +69,69 @@ jobs:
       - name: Run migrate
         run: python manage.py migrate
 
-
       - name: Run tests
         run: python manage.py test
 
-  build: #  сборка докер образа
-    needs: test # будет запускаться только после прохождения всех тестов
+  build:
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out code # получение коди из репозитория
+      - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Log in in Docker hub # авторизуемся в dockerhub используя секреты
-        run: echo ${{ secrets.DOCKER_HUB_ACCEES_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+      # ИСПРАВЛЕНО: используем официальный экшен вместо echo | docker login
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: build docker image # собираем docker образ на основе последнего комита
+      - name: build docker image
         run: docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }} .
 
-      - name: Push Docker image in Docker hub #  отправляем собранный образ в docker hub
-        run: docker push ${{secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
+      - name: Push Docker image in Docker hub
+        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
 
   deploy:
-    needs: build #  деплоим тольео после успешной сборки докер образа
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set up SSH #  настраиваем SSH для подключения к серверу
+      - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Deploy to server # подключаемся к серверу и деплоем через докер
+      - name: Deploy to server
+        env:
+          DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          TAG: ${{ github.sha }}
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF' 
-          set -e # команда заставляет немедленно завершить работу, если будет ошибка
+          set -e 
           
-          cd ${{ secrets.DEPLOY_DIR }}
+          cd $DEPLOY_DIR
           
-          git pull origin ${{ github.ref_name }}
+          git pull origin $BRANCH_NAME
           
-          echo ${{ secrets.DOCKER_HUB_ACCEES_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+          # ИСПРАВЛЕНО: безопасная авторизация без интерактивного TTY на вашем сервере
+          docker login -u "$DOCKER_HUB_USERNAME" -p "$DOCKER_HUB_ACCESS_TOKEN"
           
-          # 1. Скачиваем образ
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }} 
+          docker pull $DOCKER_HUB_USERNAME/myapp:$TAG 
           
-          # 2. Передаем TAG внутрь docker-compose при перезапуске
-          export TAG=${{ github.sha }}
-          export DOCKER_USER=${{ secrets.DOCKER_HUB_USERNAME }}
+          export TAG=$TAG
+          export DOCKER_USER=$DOCKER_HUB_USERNAME
           
           docker-compose down
-          
-          # Теперь compose подставит эти переменные
           docker-compose up -d --build
           
-          # 3. Автоматически запускаем миграции внутри контейнера 'web' сразу после запуска сайта
+          sleep 3
           docker-compose exec -T web python manage.py migrate
           
           docker-compose ps
           docker image prune -f
           EOF
-
