@@ -10,7 +10,7 @@ from materials.serializers import (
 )
 from users.permissions import IsModerator, IsOwner
 from rest_framework.permissions import IsAuthenticated
-from materials.paginations import CastomPagination
+from materials.paginations import CustomPagination
 from materials.tasks import send_course_update_email
 from django.db import transaction
 
@@ -50,7 +50,8 @@ class CourseViewSet(viewsets.ModelViewSet):
         course = serializer.save()
         transaction.on_commit(lambda: send_course_update_email.delay(course.id))
 
-    pagination_class = CastomPagination
+    # ИСПРАВЛЕНО: изменено с CastomPagination на CustomPagination
+    pagination_class = CustomPagination
 
 
 class LessonCreateAPIView(generics.CreateAPIView):
@@ -89,7 +90,8 @@ class LessonListAPIView(generics.ListAPIView):
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated]
 
-    pagination_class = CastomPagination
+    # ИСПРАВЛЕНО: изменено с CastomPagination на CustomPagination
+    pagination_class = CustomPagination
 
 
 class LessonRetrieveAPIView(generics.RetrieveAPIView):
