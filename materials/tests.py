@@ -1,21 +1,14 @@
-from http.client import responses
 from django.contrib.auth import get_user_model
-
-
-from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
-from django.contrib.auth import get_user_model
-from rest_framework.views import APIView
+from rest_framework.test import APITestCase
 
-from materials.models import Course, Lesson, Subscription
+from materials.models import Course, Lesson
 
 
 class LessonTestCase(APITestCase):
 
     def setUp(self):
-
         User = get_user_model()
-
         self.user = User.objects.create(email="student_test@test.ru")
         self.user.set_password("testpassword12345")
         self.user.save()
@@ -24,13 +17,12 @@ class LessonTestCase(APITestCase):
         )
 
     def test_lesson_create(self):
-
         self.client.force_authenticate(user=self.user)
 
         data = {
             "name": "Тест1",
             "course": self.course.id,
-            "cource_url": "https://youtube.com",
+            "source_url": "https://youtube.com",
         }
 
         response = self.client.post(

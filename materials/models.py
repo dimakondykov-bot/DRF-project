@@ -1,7 +1,5 @@
 from django.conf import settings
-from rest_framework import generics
 from django.db import models
-from django.conf import settings
 
 
 class Course(models.Model):
@@ -119,3 +117,4 @@ class Subscription(models.Model):
 
     def __str__(self):
         return self.course.name
+

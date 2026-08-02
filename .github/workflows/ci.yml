@@ -1,4 +1,3 @@
-
 name: Django CI
 
 on: [ push, pull_request ]
@@ -26,14 +25,22 @@ jobs:
   test:
     needs: lint
     runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       SECRET_KEY: "temporary_secret_key_for_github_actions_testing"
       ENGINE: "django.db.backends.sqlite3"
       NAME: "test_db"
-      USER: "test_user"
-      DB_PASSWORD: "test_password"
-      HOST: "127.0.0.1"
-      PORT: "5432"
       CELERY_BROKER_URL: "redis://127.0.0.1:6379/0"
       CELERY_RESULT_BACKEND: "redis://127.0.0.1:6379/0"
       TELEGRAM_TOKEN_TG: "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
@@ -51,7 +58,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }} -pip-${{ hashFiles('**/requirements.txt')}}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip_
 
       - name: Install dependencies
@@ -61,7 +68,6 @@ jobs:
 
       - name: Run migrate
         run: python manage.py migrate
-
 
       - name: Run tests
         run: python manage.py test
@@ -75,13 +81,13 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Log in in Docker hub
-        run: echo ${{ secrets.DOCKER_HUB_ACCEES_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+        run: echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
 
       - name: build docker image
         run: docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }} .
 
       - name: Push Docker image in Docker hub
-        run: docker push ${{secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
+        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
 
   deploy:
     needs: build
@@ -94,32 +100,35 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Deploy to server
+        env:
+          DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          TAG: ${{ github.sha }}
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF' 
-          set -e # команда заставляет немедленно завершить работу, если будет ошибка
+          set -e 
           
-          cd ${{ secrets.DEPLOY_DIR }}
+          # Теперь обращаемся к переменным через синтаксис Linux ($ИМЯ)
+          cd $DEPLOY_DIR
           
-          git pull origin ${{ github.ref_name }}
+          git pull origin $BRANCH_NAME
           
-          echo ${{ secrets.DOCKER_HUB_ACCEES_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+          echo $DOCKER_HUB_ACCESS_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin
           
-          # 1. Скачиваем образ
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }} 
+          docker pull $DOCKER_HUB_USERNAME/myapp:$TAG 
           
-          # 2. Передаем TAG внутрь docker-compose при перезапуске
-          export TAG=${{ github.sha }}
-          export DOCKER_USER=${{ secrets.DOCKER_HUB_USERNAME }}
+          export TAG=$TAG
+          export DOCKER_USER=$DOCKER_HUB_USERNAME
           
           docker-compose down
-          
-          # Теперь compose подставит эти переменные
           docker-compose up -d --build
           
-          # 3. Автоматически запускаем миграции внутри контейнера 'web' сразу после запуска сайта
+          # Ждем пару секунд, чтобы контейнер успел инициализироваться перед миграцией
+          sleep 3
           docker-compose exec -T web python manage.py migrate
           
           docker-compose ps
           docker image prune -f
           EOF
-

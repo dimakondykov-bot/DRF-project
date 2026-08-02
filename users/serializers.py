@@ -1,7 +1,6 @@
-from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
-from users.models import Payments
-from users.models import User
+from rest_framework.serializers import ModelSerializer
+from users.models import Payments, User
 
 
 class PaymentsSerializer(serializers.ModelSerializer):
@@ -30,7 +29,6 @@ class UserSerializer(ModelSerializer):
         return user
 
     def update(self, instance, validated_data):
-
         if "password" in validated_data:
             password = validated_data.pop("password")
             instance.set_password(password)
