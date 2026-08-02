@@ -1,12 +1,21 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics
 from rest_framework.filters import OrderingFilter
-from rest_framework.viewsets import ModelViewSet
-from users.models import User, Payments
-from users.serializers import UserSerializer, PaymentsSerializer, UserShortSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from users.services import create_stripe_price, create_stripe_session, create_stripe_session, create_stripe_product
-from django.db import transaction
+from rest_framework.viewsets import ModelViewSet
+
+from users.models import Payments, User
+from users.serializers import (
+    PaymentsSerializer,
+    UserSerializer,
+    UserShortSerializer,
+)
+from users.services import (
+    create_stripe_price,
+    create_stripe_product,
+    create_stripe_session,
+)
+
 
 class UsersViewSet(ModelViewSet):
     queryset = User.objects.all()
@@ -47,10 +56,10 @@ class PaymentsCreateApiView(generics.CreateAPIView):
 
         if payment.paid_course:
             product_name = payment.paid_course.title
-            product_description = getattr(payment.paid_course, 'description', '')
+            product_description = getattr(payment.paid_course, "description", "")
         elif payment.paid_lesson:
             product_name = payment.paid_lesson.title
-            product_description = getattr(payment.paid_lesson, 'description', '')
+            product_description = getattr(payment.paid_lesson, "description", "")
         else:
             product_name = "Оплата обучения"
             product_description = ""
