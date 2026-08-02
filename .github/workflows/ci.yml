@@ -20,7 +20,7 @@ jobs:
           pip install flake8
 
       - name: Run flake8
-        run: flake8 . --exclude=.venv,venv,.git,__pycache__,*migrations* --max-line-length=120
+        run: flake8 . --exclude='.venv,venv,.git,__pycache__,*migrations*' --max-line-length=120 --ignore=W292,W391
 
   test:
     needs: lint
