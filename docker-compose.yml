@@ -47,38 +47,29 @@ services:
   celery:
     image: ${DOCKER_USER}/myapp:${TAG:-latest}
     build: .
-    command: celery -A config worker --loglevel=info
-    volumes:
-      - media_volume:/app/mediafiles
+    # Флаг -B запускает beat внутри воркера, экономя 200МБ памяти!
+    command: celery -A config worker -B --loglevel=info
     env_file:
       - .env
+    volumes:
+      - media_volume:/app/mediafiles
     depends_on:
       - redis
       - db
     restart: unless-stopped
 
-  celery-beat:
-    image: ${DOCKER_USER}/myapp:${TAG:-latest}
-    build: .
-    command: celery -A config beat --loglevel=info
-    env_file:
-      - .env
-    depends_on:
-      - redis
-      - db
-    restart: unless-stopped
 
   nginx:
     build:
       context: ./nginx
     ports:
-      - "80:80"
+    - "80:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - static_volume:/app/staticfiles:ro
-      - media_volume:/app/mediafiles:ro
+    - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    - static_volume:/app/staticfiles:ro
+    - media_volume:/app/mediafiles:ro
     depends_on:
-      - web
+    - web
     restart: unless-stopped
 
 volumes:
