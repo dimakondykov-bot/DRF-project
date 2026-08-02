@@ -22,7 +22,6 @@ class UsersViewSet(ModelViewSet):
         return UserShortSerializer
 
 
-
 class PaymentsListApiView(generics.ListAPIView):
     queryset = Payments.objects.all()
     serializer_class = PaymentsSerializer
@@ -36,7 +35,6 @@ class UserCreateApiView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
-
 
 
 class PaymentsCreateApiView(generics.CreateAPIView):
@@ -58,11 +56,10 @@ class PaymentsCreateApiView(generics.CreateAPIView):
             product_description = ""
 
         stripe_product = create_stripe_product(product_name, product_description)
-        stripe_price = create_stripe_price(stripe_product.id,payment.payment_amount)
+        stripe_price = create_stripe_price(stripe_product.id, payment.payment_amount)
         stripe_session = create_stripe_session(stripe_price.id)
 
         payment.session_id = stripe_session.id
         payment.link = stripe_session.url
 
         payment.save()
-
