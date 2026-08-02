@@ -103,32 +103,26 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Deploy to server
-        env:
-          DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-          TAG: ${{ github.sha }}
-          BRANCH_NAME: ${{ github.ref_name }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF' 
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << EOF
           set -e 
           
-          cd $DEPLOY_DIR
+          cd "${{ secrets.DEPLOY_DIR }}"
           
-          git pull origin $BRANCH_NAME
+          # Подтягиваем код нужной ветки
+          git pull origin "${{ github.ref_name }}"
           
-          # ИСПРАВЛЕНО: безопасная авторизация без интерактивного TTY на вашем сервере
-          docker login -u "$DOCKER_HUB_USERNAME" -p "$DOCKER_HUB_ACCESS_TOKEN"
+          docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
           
-          docker pull $DOCKER_HUB_USERNAME/myapp:$TAG 
+          docker pull "${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}"
           
-          export TAG=$TAG
-          export DOCKER_USER=$DOCKER_HUB_USERNAME
+          export TAG="${{ github.sha }}"
+          export DOCKER_USER="${{ secrets.DOCKER_HUB_USERNAME }}"
           
           docker-compose down
           docker-compose up -d --build
           
-          sleep 3
+          sleep 5
           docker-compose exec -T web python manage.py migrate
           
           docker-compose ps
