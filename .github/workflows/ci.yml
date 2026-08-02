@@ -80,7 +80,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      # ИСПРАВЛЕНО: используем официальный экшен вместо echo | docker login
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
