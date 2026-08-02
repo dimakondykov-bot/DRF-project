@@ -109,7 +109,10 @@ jobs:
           
           cd "${{ secrets.DEPLOY_DIR }}"
           
-          # Подтягиваем код нужной ветки
+          # ИСПРАВЛЕНО: разрешаем Git работать с этой папкой от любого пользователя
+          git config --global --add safe.directory "${{ secrets.DEPLOY_DIR }}"
+          
+          # Теперь подтягиваем код нужной ветки (ошибка уйдет)
           git pull origin "${{ github.ref_name }}"
           
           docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
