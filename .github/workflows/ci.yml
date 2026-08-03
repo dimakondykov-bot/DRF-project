@@ -117,6 +117,8 @@ jobs:
           
           docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
           
+          docker system prune -f
+          
           docker pull "${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}"
           
           export TAG="${{ github.sha }}"
@@ -125,8 +127,7 @@ jobs:
           docker-compose down
           docker-compose up -d --build
           
-          sleep 5
-          docker-compose exec -T web python manage.py migrate
+          sleep 15
           
           docker-compose ps
           docker image prune -f
