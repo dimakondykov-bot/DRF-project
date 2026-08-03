@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
 
   nginx:
-    image: ${DOCKER_USER}/myapp-nginx:${TAG:-latest}
+    image: ${DOCKER_USER}/myapp:nginx-${TAG:-latest}
     ports:
       - "80:80"
     volumes:

@@ -92,6 +92,12 @@ jobs:
       - name: Push Docker image in Docker hub
         run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
 
+      - name: build nginx image
+        run: docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:nginx-${{ github.sha }} ./nginx
+
+      - name: Push nginx image in Docker hub
+        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:nginx-${{ github.sha }}
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -124,8 +130,11 @@ jobs:
           export TAG="${{ github.sha }}"
           export DOCKER_USER="${{ secrets.DOCKER_HUB_USERNAME }}"
           
+          docker pull "${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}"
+          docker pull "${{ secrets.DOCKER_HUB_USERNAME }}/myapp:nginx-${{ github.sha }}"
+          
           docker-compose down
-          docker-compose up -d --build
+          docker-compose up -d
           
           sleep 15
           
