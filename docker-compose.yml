@@ -58,8 +58,7 @@ services:
     restart: unless-stopped
 
   nginx:
-    build:
-      context: ./nginx
+    image: ${DOCKER_USER}/myapp-nginx:${TAG:-latest}
     ports:
       - "80:80"
     volumes:
@@ -69,6 +68,7 @@ services:
     depends_on:
       - web
     restart: unless-stopped
+
 
 volumes:
   postgres_data:
