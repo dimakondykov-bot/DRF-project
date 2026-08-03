@@ -120,7 +120,7 @@ jobs:
           
           git config --global --add safe.directory '*'
           
-          git pull origin "${{ github.ref_name }}"
+          git pull origin master
           
           docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
           
