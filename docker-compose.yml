@@ -47,30 +47,18 @@ services:
   celery:
     image: ${DOCKER_USER}/myapp:${TAG:-latest}
     build: .
-    command: celery -A config worker --loglevel=info
+    command: celery -A config worker -B --loglevel=info
+    env_file:
+      - .env
     volumes:
       - media_volume:/app/mediafiles
-    env_file:
-      - .env
-    depends_on:
-      - redis
-      - db
-    restart: unless-stopped
-
-  celery-beat:
-    image: ${DOCKER_USER}/myapp:${TAG:-latest}
-    build: .
-    command: celery -A config beat --loglevel=info
-    env_file:
-      - .env
     depends_on:
       - redis
       - db
     restart: unless-stopped
 
   nginx:
-    build:
-      context: ./nginx
+    image: ${DOCKER_USER}/myapp:nginx-latest
     ports:
       - "80:80"
     volumes:

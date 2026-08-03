@@ -92,6 +92,13 @@ jobs:
       - name: Push Docker image in Docker hub
         run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
 
+      - name: build nginx image
+        run: docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:nginx-latest ./nginx
+
+      - name: Push nginx image in Docker hub
+        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:nginx-latest
+
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -109,24 +116,28 @@ jobs:
           
           cd "${{ secrets.DEPLOY_DIR }}"
           
-          # ИСПРАВЛЕНО: разрешаем Git работать с этой папкой от любого пользователя
-          git config --global --add safe.directory "${{ secrets.DEPLOY_DIR }}"
+          sudo chown -R \$(whoami):\$(whoami) "${{ secrets.DEPLOY_DIR }}"
           
-          # Теперь подтягиваем код нужной ветки (ошибка уйдет)
-          git pull origin "${{ github.ref_name }}"
+          git config --global --add safe.directory '*'
+          
+          git pull origin master
           
           docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          
+          docker system prune -f
           
           docker pull "${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}"
           
           export TAG="${{ github.sha }}"
           export DOCKER_USER="${{ secrets.DOCKER_HUB_USERNAME }}"
           
-          docker-compose down
-          docker-compose up -d --build
+          docker pull "${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}"
+          docker pull "${{ secrets.DOCKER_HUB_USERNAME }}/myapp:nginx-latest"
           
-          sleep 5
-          docker-compose exec -T web python manage.py migrate
+          docker-compose down
+          docker-compose up -d
+          
+          sleep 15
           
           docker-compose ps
           docker image prune -f
